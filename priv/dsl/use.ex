@@ -11,11 +11,11 @@ defmodule UserDAO do
 
   def dml do
     # get
-    user = User.with uuid, and: timestamp
+    # user = User.with uuid, and: timestamp
     user = get User, with: uuid, and: timestamp
     user = get User, hash: uuid, range: timestamp
-    user = User.by(uuid, timestamp)
-    user = User.get hash: uuid, range: timestamp
+    # user = User.by(uuid, timestamp)
+    # user = User.get hash: uuid, range: timestamp
 
     # data access
     user.email

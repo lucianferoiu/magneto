@@ -29,7 +29,8 @@ defmodule Magneto.Mixfile do
   end
 
   defp deps do
-    [{:httpoison, "~> 0.9.0"},
+    [{:poison, "~> 2.0"},
+    {:httpoison, "~> 0.9.0"},
     {:timex, "~> 3.0"},
     {:ex_aws, "~> 1.0.0-beta3"}]
   end

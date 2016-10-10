@@ -1,5 +1,6 @@
 defmodule Magneto.Model do
   require Logger
+  alias Magneto.Type
 
   defmodule Metadata do
     defstruct [:storage, :keys, :attributes, :global_indexes, :local_indexes]
@@ -118,7 +119,7 @@ defmodule Magneto.Model do
     canonical_table_name = Module.get_attribute(mod, :canonical_table_name)
     keys = Module.get_attribute(mod, :keys)
     attribs = Module.get_attribute(mod, :attributes)
-    fields = attribs |> Enum.map(fn {name, type} -> {name, default_value_for_type(type)} end)
+    fields = attribs |> Enum.map(fn {name, type} -> {name, Type.default_value(type)} end)
 
     meta = %Metadata{ storage: canonical_table_name,
         keys: keys, attributes: attribs}
@@ -171,21 +172,5 @@ defmodule Magneto.Model do
     end
   end
 
-  defp default_value_for_type(:number), do: 0
-  defp default_value_for_type(:string), do: ""
-  defp default_value_for_type(:boolean), do: true
-  defp default_value_for_type(:uuid), do: nil
-  defp default_value_for_type(:date), do: nil # evaluated at compile time, the current time would be wrong
-  defp default_value_for_type(:timestamp), do: nil # evaluated at compile time, the current time would be wrong
-  defp default_value_for_type(atom) when is_atom(atom) do
-    cond do
-      Code.ensure_compiled?(atom) and function_exported?(atom, :type, 0) ->
-        Code.eval_string "%#{Atom.to_string(atom)}{}"
-      true -> nil
-    end
-  end
-  defp default_value_for_type(lst) when is_list(lst), do: []
-  defp default_value_for_type(m) when is_map(m), do: %{}
-  defp default_value_for_type(_), do: nil
 
 end

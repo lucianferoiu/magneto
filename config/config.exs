@@ -29,6 +29,10 @@ use Mix.Config
 #
 #     import_config "#{Mix.env}.exs"
 
+config :ex_aws,
+  access_key_id: "my-inexistent-aws-key",
+  secret_access_key: "i-have-no-secrets"
+
 config :ex_aws, :dynamodb,
   scheme: "http://",
   host: "localhost",
