@@ -2,7 +2,7 @@ defmodule Magneto.Model do
   require Logger
 
   defmodule Metadata do
-    defstruct [:keys, :attributes, :global_indexes, :local_indexes]
+    defstruct [:storage, :keys, :attributes, :global_indexes, :local_indexes]
   end
 
   defmacro __using__(_) do
@@ -19,7 +19,6 @@ defmodule Magneto.Model do
 
     quote do
       import Magneto.Model
-
       @before_compile unquote(__MODULE__)
     end
   end
@@ -28,11 +27,13 @@ defmodule Magneto.Model do
 
   defmacro __before_compile__(env) do
     # Logger.debug "#{env.module} -> __before_compile__"
-    namespace = Module.get_attribute(env.module, :namespace)
-    table_name = Module.get_attribute(env.module, :table_name)
-    Module.put_attribute(env.module, :canonical_table_name, "#{namespace}.#{table_name}")
+    target = env.module
+    namespace = Module.get_attribute(target, :namespace)
+    table_name = Module.get_attribute(target, :table_name)
+    Module.put_attribute(target, :canonical_table_name, "#{namespace}.#{table_name}")
     Module.eval_quoted __CALLER__, [
-      Magneto.Model.__def_helper_fun__(env.module)
+      Magneto.Model.__def_struct__(target),
+      Magneto.Model.__def_helper_funcs__(target)
     ]
   end
 
@@ -55,7 +56,7 @@ defmodule Magneto.Model do
         name when is_atom(name) -> {name, :string}
         name when is_binary(name) -> {String.to_atom(name), :string}
       end
-      # Magneto.Model.__attribute__(__MODULE__, name, type)
+      Magneto.Model.__attribute__(__MODULE__, name, type)
       Magneto.Model.__key__(__MODULE__, :hash, name, type)
     end
   end
@@ -68,7 +69,7 @@ defmodule Magneto.Model do
         name when is_atom(name) -> {name, :number}
         name when is_binary(name) -> {String.to_atom(name), :number}
       end
-      # Magneto.Model.__attribute__(__MODULE__, name, type)
+      Magneto.Model.__attribute__(__MODULE__, name, type)
       Magneto.Model.__key__(__MODULE__, :range, name, type)
     end
   end
@@ -96,6 +97,10 @@ defmodule Magneto.Model do
   # ----
 
   def __attribute__(mod, name, type) do
+    existing_attributes = Module.get_attribute(mod, :attributes)
+    if Keyword.has_key?(existing_attributes, name) do
+      raise ArgumentError, "Duplicate attribute #{name}"
+    end
     check_type!(type, name)
     Module.put_attribute(mod, :attributes, {name, type})
   end
@@ -109,8 +114,25 @@ defmodule Magneto.Model do
     Module.put_attribute(mod, :keys, updated_keys)
   end
 
+  def __def_struct__(mod) do
+    canonical_table_name = Module.get_attribute(mod, :canonical_table_name)
+    keys = Module.get_attribute(mod, :keys)
+    attribs = Module.get_attribute(mod, :attributes)
+    fields = attribs |> Enum.map(fn {name, type} -> {name, default_value_for_type(type)} end)
 
-  def __def_helper_fun__(mod) do
+    meta = %Metadata{ storage: canonical_table_name,
+        keys: keys, attributes: attribs}
+    fields = [__meta__: Macro.escape(Macro.escape(meta))] ++ fields # double-escape for the doubly-quoted
+
+    # quote in quote because we eval_quoted the result of the function
+    quote bind_quoted: [fields: fields] do
+      quote do
+        defstruct unquote(fields)
+      end
+    end
+  end
+
+  def __def_helper_funcs__(mod) do
     namespace = Module.get_attribute(mod, :namespace)
     canonical_table_name = Module.get_attribute(mod, :canonical_table_name)
     keys = Module.get_attribute(mod, :keys)
@@ -120,7 +142,6 @@ defmodule Magneto.Model do
       def __canonical_name__, do: unquote(canonical_table_name)
       def __keys__, do: unquote(keys)
       def __attributes__, do: unquote(attribs)
-
     end
   end
 
@@ -137,6 +158,8 @@ defmodule Magneto.Model do
       is_list(type) and length(type) == 1 ->
         [inner_type] = type
         {:composite, check_type!(inner_type, name)}
+      is_map(type) ->
+        {:composite, Enum.map(type, fn {n,t} -> check_type!(t, n) end) }
       is_atom(type) ->
         if Code.ensure_compiled?(type) and function_exported?(type, :type, 0) do
           {:composite, type}
@@ -147,5 +170,22 @@ defmodule Magneto.Model do
         raise ArgumentError, "invalid type #{inspect type} for attribute #{inspect name}"
     end
   end
+
+  defp default_value_for_type(:number), do: 0
+  defp default_value_for_type(:string), do: ""
+  defp default_value_for_type(:boolean), do: true
+  defp default_value_for_type(:uuid), do: nil
+  defp default_value_for_type(:date), do: nil # evaluated at compile time, the current time would be wrong
+  defp default_value_for_type(:timestamp), do: nil # evaluated at compile time, the current time would be wrong
+  defp default_value_for_type(atom) when is_atom(atom) do
+    cond do
+      Code.ensure_compiled?(atom) and function_exported?(atom, :type, 0) ->
+        Code.eval_string "%#{Atom.to_string(atom)}{}"
+      true -> nil
+    end
+  end
+  defp default_value_for_type(lst) when is_list(lst), do: []
+  defp default_value_for_type(m) when is_map(m), do: %{}
+  defp default_value_for_type(_), do: nil
 
 end

@@ -75,5 +75,26 @@ defmodule MagnetoModelTest do
     end
   end
 
+  defmodule StructModel do # needs to be declared outside the macro test because it won't expand the defstruct otherwise
+    use Magneto.Model      # (!) actually, this may indicate a mistake in the macro expansion in Magneto.Model
+    hash ssn: :number      # ... but TODO later
+    attribute age: :number
+    attributes name: :string, email: :string, enabled: :boolean
+    attribute last_login: :timestamp
+  end
+
+  test "as struct" do
+    instance = %StructModel{age: 12}
+    assert instance.age == 12
+    assert instance.name == "" #default value for strings
+    assert instance.enabled == true #default value for booleans
+    assert instance.__meta__.keys == [hash: {:ssn, :number}]
+    assert instance.ssn == 0 #key as attribute
+  end
+
+  test "metadata struct" do
+
+  end
+
 
 end
