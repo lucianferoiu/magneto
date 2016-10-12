@@ -2,8 +2,11 @@ defmodule Magneto.Model do
   require Logger
   alias Magneto.Type
 
-  defmodule Metadata do
-    defstruct [:storage, :keys, :attributes, :global_indexes, :local_indexes]
+  defmodule TableMetadata do
+    defstruct [:type, :storage, :keys, :attributes, :global_indexes, :local_indexess]
+  end
+  defmodule IndexMetadata do
+    defstruct [:type, :table, :keys, :attributes]
   end
 
   defmacro __using__(_) do
@@ -18,6 +21,9 @@ defmodule Magneto.Model do
     Module.put_attribute(target, :throughput, [3,1])
     Module.register_attribute(target, :attributes, accumulate: true)
     Module.put_attribute(target, :keys, [hash: {:id, :number}]) # default pk
+    Module.register_attribute(target, :local_indexes, accumulate: true)
+    Module.register_attribute(target, :global_indexes, accumulate: true)
+    Module.register_attribute(target, :all_indexes_def, accumulate: true)
 
     quote do
       import Magneto.Model
@@ -35,6 +41,7 @@ defmodule Magneto.Model do
     Module.put_attribute(target, :canonical_table_name, "#{namespace}.#{table_name}")
     Module.eval_quoted __CALLER__, [
       Magneto.Model.__def_struct__(target),
+      Magneto.Model.__def_indexes__(target),
       Magneto.Model.__def_helper_funcs__(target)
     ]
   end
@@ -102,8 +109,21 @@ defmodule Magneto.Model do
     end
   end
 
-  defmacro local(block), do: quote do: block
-  defmacro global(block), do: quote do: block
+  # defmacro index([{:local, {:__aliases__, _ , [index_name]}}, {:sort, sort} | rest]) do
+  #   # Logger.debug("Local index name: #{inspect index_name} for sort: #{sort}, rest: #{inspect rest}")
+  #   Magneto.Model.__local_index__(index_name,sort,rest)
+  # end
+  # defmacro index([{:global, {:__aliases__, _ , [index_name]}}, {:hash, hash}, {:range, range} | rest]) do
+  #   # Logger.debug("Global index name: #{inspect index_name} for hash: #{hash} and range: #{range}, rest: #{inspect rest}")
+  #   Magneto.Model.__global_index__(index_name,hash,range,rest)
+  # end
+  defmacro index(kw_list) do
+    quote do
+      Module.put_attribute(__MODULE__, :all_indexes_def, unquote(kw_list))
+    end
+  end
+
+
 
   # ----
 
@@ -131,7 +151,7 @@ defmodule Magneto.Model do
     attribs = Module.get_attribute(mod, :attributes)
     fields = attribs |> Enum.map(fn {name, type} -> {name, Type.default_value(type)} end)
 
-    meta = %Metadata{ storage: canonical_table_name,
+    meta = %TableMetadata{ storage: canonical_table_name,
         keys: keys, attributes: attribs}
     fields = [__meta__: Macro.escape(Macro.escape(meta))] ++ fields # double-escape for the doubly-quoted
 
@@ -143,24 +163,89 @@ defmodule Magneto.Model do
     end
   end
 
+  def __def_indexes__(mod) do
+    namespace = Module.get_attribute(mod, :namespace)
+    table = Module.get_attribute(mod, :canonical_table_name)
+    table_keys = Module.get_attribute(mod, :keys)
+    table_atts = Module.get_attribute(mod, :attributes)
+    all_indexes_def = Module.get_attribute(mod, :all_indexes_def)
+    # all_indexes_def |> Enum.each(&IO.puts("index: #{inspect &1}"))
+    all_indexes_def |> Enum.each(&Magneto.Model.__def_index__(mod, namespace, table, table_keys, table_atts, &1))
+  end
+
+  def __def_index__(mod, namespace, table, table_keys, table_atts, [{index_type, index_name} | rest]) do
+    [hash: {hash,_}, range: {range,_}] = table_keys
+    hash = Keyword.get(rest, :hash, hash)
+    range = Keyword.get(rest, :range, range)
+    projection_type = Keyword.get(rest, :projection, :keys)
+    projection = projection(projection_type)
+    index_def = %{
+      index_name: "#{namespace}.#{to_string(index_name)}",
+      key_schema: [%{attribute_name: hash, attribute_type: "HASH"},
+        %{attribute_name: range, attribute_type: "RANGE"}],
+      projection: projection
+    }
+
+    case index_type do
+      :local ->
+        Module.put_attribute(mod, :local_indexes, index_def)
+      :global ->
+        [read: read, write: write] = Keyword.get(rest, :throughput, [read: 2, write: 1])
+        index_def = Map.put(index_def, :provisioned_throughput, %{
+          read_capacity_units: read,
+          write_capacity_units: write,
+        })
+        Module.put_attribute(mod, :global_indexes, index_def)
+    end
+
+    fields = table_atts |> Enum.map(fn {name, type} -> {name, Type.default_value(type)} end)
+    meta = %IndexMetadata{ type: index_type, table: table, keys: [hash, range],
+       attributes: []}
+    fields = [__meta__: Macro.escape(Macro.escape(meta))] ++ fields # double-escape for the doubly-quoted
+
+    quote bind_quoted: [fields: fields] do
+      quote do
+        defmodule unquote(index_name) do
+          defstruct unquote(fields)
+        end
+      end
+    end
+  end
+
   def __def_helper_funcs__(mod) do
     namespace = Module.get_attribute(mod, :namespace)
     canonical_table_name = Module.get_attribute(mod, :canonical_table_name)
     keys = Module.get_attribute(mod, :keys)
     attribs = Module.get_attribute(mod, :attributes)
     throughput = Module.get_attribute(mod, :throughput)
+    global_indexes = Module.get_attribute(mod, :global_indexes)
+    local_indexes = Module.get_attribute(mod, :local_indexes)
     quote do
       def __namespace__, do: unquote(namespace)
       def __canonical_name__, do: unquote(canonical_table_name)
       def __keys__, do: unquote(keys)
       def __attributes__, do: unquote(attribs)
       def __throughput__, do: unquote(throughput)
+      def __global_indexes__, do: unquote(global_indexes)
+      def __local_indexes__, do: unquote(local_indexes)
     end
   end
 
 
+  def __local_index__(index_name,sort,rest) do
+    idx_def = %{
+      index_name: to_string(index_name)
+    }
+  end
+
   # -----
 
+
+  defp projection(:keys), do: %{ projection_type: "KEYS_ONLY" }
+  defp projection(:all), do: %{ projection_type: "ALL" }
+  defp projection(atts) when is_list(atts) do
+    %{ projection_type: "INCLUDE", non_key_attributes: atts |> Enum.map(&Atom.to_string(&1))}
+  end
 
   defp check_type!(type, name) do
     cond do

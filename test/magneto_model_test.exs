@@ -100,10 +100,10 @@ defmodule MagnetoModelTest do
       hash manufacturer: :string
       range model: :string
       attribute year: :number
+      attribute category: :string
 
-      # local index CarPerYear do
-      #   sort_by :year
-      # end
+      index local: CarPerYear, sort: :year, projection: :keys
+      index global: YearlyCarTypes, hash: :year, range: :category, projection: [:manufacturer, :model], throughput: [read: 2, write: 1]
 
     end
   end

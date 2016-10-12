@@ -2,6 +2,7 @@ defmodule Magneto.Operations.DDL do
 
   alias Magneto.Common
   alias Magneto.Type
+  require Logger
 
   def create(model) do
     Code.ensure_compiled(model)
@@ -10,9 +11,12 @@ defmodule Magneto.Operations.DDL do
     keys_schema = pk_schema(keys)
     keys_spec = pk_spec(keys)
     [read, write] = apply(model, :__throughput__, [])
+    local_indexes = apply(model, :__local_indexes__, [])
+    global_indexes = apply(model, :__global_indexes__, [])
+    Logger.debug "creating table with indexes: local=#{inspect local_indexes}, global=#{inspect global_indexes}"
 
     table_name
-        |> ExAws.Dynamo.create_table(keys_schema, keys_spec, read, write, [], []) # TODO implement throughput and indexes
+        |> ExAws.Dynamo.create_table(keys_schema, keys_spec, read, write, local_indexes, global_indexes)
         |> ExAws.request
   end
 
