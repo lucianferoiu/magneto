@@ -86,7 +86,7 @@ defmodule MagnetoModelTest do
   test "as struct" do
     instance = %StructModel{age: 12}
     assert instance.age == 12
-    assert instance.name == "" #default value for strings
+    assert instance.name == nil #default value for strings
     assert instance.enabled == true #default value for booleans
     assert instance.__meta__.keys == [hash: {:ssn, :number}]
     assert instance.ssn == 0 #key as attribute

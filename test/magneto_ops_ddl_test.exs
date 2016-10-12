@@ -1,8 +1,8 @@
-defmodule MagnetoOpsTest do
+defmodule MagnetoOpsDDLTest do
   use ExUnit.Case
+  use Magneto
   doctest Magneto.Operations
   require Logger
-  require Magneto.Operations
 
   defmodule StructModel do
     use Magneto.Model
@@ -13,15 +13,15 @@ defmodule MagnetoOpsTest do
   end
 
   test "model create and destroy" do
-    {:ok, c} = Magneto.Operations.DDL.create StructModel
+    {:ok, c} = create StructModel
     # Logger.debug "StructModel: #{inspect c}"
     %{"TableDescription" => %{"TableName" => tbl}} = c
     assert tbl == StructModel.__canonical_name__
-    {:ok, desc} = Magneto.Operations.DDL.describe StructModel
+    {:ok, desc} = describe StructModel
     # Logger.debug "StructModel: #{inspect desc}"
     %{"Table" => %{"TableName" => tbl}} = desc
     assert tbl == StructModel.__canonical_name__
-    {:ok, d} = Magneto.Operations.DDL.destroy StructModel
+    {:ok, d} = destroy StructModel
     # Logger.debug "StructModel: #{inspect d}"
     %{"TableDescription" => %{"TableName" => tbl}} = d
     assert tbl == StructModel.__canonical_name__
