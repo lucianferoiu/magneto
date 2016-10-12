@@ -11,6 +11,7 @@ defmodule MagnetoModelTest do
     assert EmptyModel.__namespace__ == ns
     assert EmptyModel.__keys__ == [hash: {:id, :number}]
     assert EmptyModel.__canonical_name__ == "#{ns}.EmptyModel"
+    assert EmptyModel.__throughput__ == [3, 1]
   end
 
   test "custom namespace" do
@@ -60,7 +61,6 @@ defmodule MagnetoModelTest do
     assert SortKeyModel.__keys__ == [hash: {:GrandPrix, :string}, range: {:finishing_place, :number}]
   end
 
-
   test "simple attributes" do
     defmodule SimpleAttsModel do
       use Magneto.Model
@@ -81,6 +81,7 @@ defmodule MagnetoModelTest do
     attribute age: :number
     attributes name: :string, email: :string, enabled: :boolean
     attribute last_login: :timestamp
+    throughput read: 5, write: 3
   end
 
   test "as struct" do
@@ -90,10 +91,21 @@ defmodule MagnetoModelTest do
     assert instance.enabled == true #default value for booleans
     assert instance.__meta__.keys == [hash: {:ssn, :number}]
     assert instance.ssn == 0 #key as attribute
+    assert StructModel.__throughput__ == [5, 3]
   end
 
-  test "metadata struct" do
+  test "local index" do
+    defmodule LocalIndexModel do
+      use Magneto.Model
+      hash manufacturer: :string
+      range model: :string
+      attribute year: :number
 
+      # local index CarPerYear do
+      #   sort_by :year
+      # end
+
+    end
   end
 
 

@@ -5,7 +5,7 @@ defmodule Magneto.Type do
 
   def cast_to_dynamo_db(value, magneto_type), do: value
 
-  def cast_to_magneto(value, dynamo_db_type), do: value
+  def cast_to_magneto(value, magneto_type), do: value
 
   # --- private functions
 

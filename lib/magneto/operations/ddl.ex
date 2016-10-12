@@ -9,9 +9,10 @@ defmodule Magneto.Operations.DDL do
     keys = apply(model, :__keys__, [])
     keys_schema = pk_schema(keys)
     keys_spec = pk_spec(keys)
+    [read, write] = apply(model, :__throughput__, [])
 
     table_name
-        |> ExAws.Dynamo.create_table(keys_schema, keys_spec, 1, 1, [], []) # TODO implement throughput and indexes
+        |> ExAws.Dynamo.create_table(keys_schema, keys_spec, read, write, [], []) # TODO implement throughput and indexes
         |> ExAws.request
   end
 

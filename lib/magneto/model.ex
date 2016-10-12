@@ -15,6 +15,7 @@ defmodule Magneto.Model do
 
     Module.put_attribute(target, :namespace, default_namespace)
     Module.put_attribute(target, :table_name, table_name)
+    Module.put_attribute(target, :throughput, [3,1])
     Module.register_attribute(target, :attributes, accumulate: true)
     Module.put_attribute(target, :keys, [hash: {:id, :number}]) # default pk
 
@@ -95,6 +96,15 @@ defmodule Magneto.Model do
     end
   end
 
+  defmacro throughput(read: read, write: write) do
+    quote do
+      Module.put_attribute(__MODULE__, :throughput, [unquote(read), unquote(write)])
+    end
+  end
+
+  defmacro local(block), do: quote do: block
+  defmacro global(block), do: quote do: block
+
   # ----
 
   def __attribute__(mod, name, type) do
@@ -138,11 +148,13 @@ defmodule Magneto.Model do
     canonical_table_name = Module.get_attribute(mod, :canonical_table_name)
     keys = Module.get_attribute(mod, :keys)
     attribs = Module.get_attribute(mod, :attributes)
+    throughput = Module.get_attribute(mod, :throughput)
     quote do
       def __namespace__, do: unquote(namespace)
       def __canonical_name__, do: unquote(canonical_table_name)
       def __keys__, do: unquote(keys)
       def __attributes__, do: unquote(attribs)
+      def __throughput__, do: unquote(throughput)
     end
   end
 
