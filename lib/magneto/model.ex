@@ -6,7 +6,7 @@ defmodule Magneto.Model do
     defstruct [:type, :storage, :keys, :attributes, :global_indexes, :local_indexess]
   end
   defmodule IndexMetadata do
-    defstruct [:type, :table, :keys, :attributes]
+    defstruct [:type, :name, :table, :keys, :attributes]
   end
 
   defmacro __using__(_) do
@@ -169,7 +169,7 @@ defmodule Magneto.Model do
     table_keys = Module.get_attribute(mod, :keys)
     table_atts = Module.get_attribute(mod, :attributes)
     all_indexes_def = Module.get_attribute(mod, :all_indexes_def)
-    # all_indexes_def |> Enum.each(&IO.puts("index: #{inspect &1}"))
+    all_indexes_def |> Enum.each(&IO.puts("index: #{inspect &1}"))
     all_indexes_def |> Enum.each(&Magneto.Model.__def_index__(mod, namespace, table, table_keys, table_atts, &1))
   end
 
@@ -179,8 +179,9 @@ defmodule Magneto.Model do
     range = Keyword.get(rest, :range, range)
     projection_type = Keyword.get(rest, :projection, :keys)
     projection = projection(projection_type)
+    index_name = String.split(Atom.to_string(index_name), ".") |> List.last
     index_def = %{
-      index_name: "#{namespace}.#{to_string(index_name)}",
+      index_name: "#{namespace}.indexes.#{index_name}",
       key_schema: [%{attribute_name: hash, attribute_type: "HASH"},
         %{attribute_name: range, attribute_type: "RANGE"}],
       projection: projection
@@ -188,23 +189,27 @@ defmodule Magneto.Model do
 
     case index_type do
       :local ->
-        Module.put_attribute(mod, :local_indexes, index_def)
+        Module.put_attribute(mod, :local_indexes, Macro.escape(index_def))
+        :local
       :global ->
         [read: read, write: write] = Keyword.get(rest, :throughput, [read: 2, write: 1])
         index_def = Map.put(index_def, :provisioned_throughput, %{
           read_capacity_units: read,
           write_capacity_units: write,
         })
-        Module.put_attribute(mod, :global_indexes, index_def)
+        Module.put_attribute(mod, :global_indexes, Macro.escape(index_def))
+        :global
     end
 
     fields = table_atts |> Enum.map(fn {name, type} -> {name, Type.default_value(type)} end)
-    meta = %IndexMetadata{ type: index_type, table: table, keys: [hash, range],
+    meta = %IndexMetadata{ type: index_type, table: table, keys: [hash, range], name: index_name,
        attributes: []}
     fields = [__meta__: Macro.escape(Macro.escape(meta))] ++ fields # double-escape for the doubly-quoted
-
-    quote bind_quoted: [fields: fields] do
+    Logger.debug "Setting index fields #{inspect fields}"
+    quote bind_quoted: [fields: fields, index_name: index_name] do
+      Logger.debug "Injecting index module #{inspect index_name}"
       quote do
+        Logger.debug "Defining index module #{inspect unquote(index_name)}"
         defmodule unquote(index_name) do
           defstruct unquote(fields)
         end

@@ -94,7 +94,8 @@ defmodule MagnetoModelTest do
     assert StructModel.__throughput__ == [5, 3]
   end
 
-  test "local index" do
+  test "secondary indexes definition" do
+    use Magneto
     defmodule LocalIndexModel do
       use Magneto.Model
       hash manufacturer: :string
@@ -103,8 +104,8 @@ defmodule MagnetoModelTest do
       attribute category: :string
 
       index local: CarPerYear, sort: :year, projection: :keys
-      index global: YearlyCarTypes, hash: :year, range: :category, projection: [:manufacturer, :model], throughput: [read: 2, write: 1]
-
+      index global: YearlyCarTypes, hash: :year, range: :category,
+        projection: [:manufacturer, :model], throughput: [read: 2, write: 1]
     end
   end
 
