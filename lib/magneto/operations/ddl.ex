@@ -13,7 +13,7 @@ defmodule Magneto.Operations.DDL do
     [read, write] = apply(model, :__throughput__, [])
     local_indexes = apply(model, :__local_indexes__, [])
     global_indexes = apply(model, :__global_indexes__, [])
-    Logger.debug "creating table with indexes: local=#{inspect local_indexes}, global=#{inspect global_indexes}"
+    # Logger.debug "creating table with indexes: local=#{inspect local_indexes}, global=#{inspect global_indexes}"
 
     table_name
         |> ExAws.Dynamo.create_table(keys_schema, keys_spec, read, write, local_indexes, global_indexes)

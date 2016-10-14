@@ -5,6 +5,7 @@ defmodule Magneto.Model do
   defmodule TableMetadata do
     defstruct [:type, :storage, :keys, :attributes, :global_indexes, :local_indexess]
   end
+
   defmodule IndexMetadata do
     defstruct [:type, :name, :table, :keys, :attributes]
   end
@@ -169,7 +170,7 @@ defmodule Magneto.Model do
     table_keys = Module.get_attribute(mod, :keys)
     table_atts = Module.get_attribute(mod, :attributes)
     all_indexes_def = Module.get_attribute(mod, :all_indexes_def)
-    all_indexes_def |> Enum.each(&IO.puts("index: #{inspect &1}"))
+    # all_indexes_def |> Enum.each(&IO.puts("index: #{inspect &1}"))
     all_indexes_def |> Enum.each(&Magneto.Model.__def_index__(mod, namespace, table, table_keys, table_atts, &1))
   end
 
@@ -205,7 +206,7 @@ defmodule Magneto.Model do
     meta = %IndexMetadata{ type: index_type, table: table, keys: [hash, range], name: index_name,
        attributes: []}
     fields = [__meta__: Macro.escape(Macro.escape(meta))] ++ fields # double-escape for the doubly-quoted
-    Logger.debug "Setting index fields #{inspect fields}"
+    # Logger.debug "Setting index fields #{inspect fields}"
     quote bind_quoted: [fields: fields, index_name: index_name] do
       Logger.debug "Injecting index module #{inspect index_name}"
       quote do

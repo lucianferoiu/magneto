@@ -30,7 +30,6 @@ defmodule Magneto.Operations.DML do
     do_get(model, keys)
   end
 
-
   # -----
 
   defp do_put(model, values) do
@@ -85,22 +84,5 @@ defmodule Magneto.Operations.DML do
     #  Logger.debug("key_values: #{inspect key_values}")
      key_values
   end
-
-
-  defp loaded_module(mod) do
-    searched_mod = Atom.to_string(mod)
-    Logger.debug "Searching for #{searched_mod}"
-    :code.all_loaded
-    |> Enum.map(fn({name, _}) ->
-      # Logger.debug "Analyzing #{inspect name}..."
-      m = to_string(name)
-      m
-    end)
-    |> Enum.filter(&is_elixir_module?/1)
-    |> Enum.find(&String.contains?(&1, searched_mod))
-  end
-
-  defp is_elixir_module?("Elixir." <> _), do: true
-  defp is_elixir_module?(_), do: false
 
 end

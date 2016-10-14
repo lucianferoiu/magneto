@@ -36,7 +36,7 @@ defmodule MagnetoOpsDDLTest do
       attribute year: :number
       attribute category: :string
 
-      index local: CarPerYear, sort: :year, projection: :keys
+      index local: CarPerYear, range: :year, projection: :keys
       index global: YearlyCarTypes, hash: :year, range: :category,
         projection: [:manufacturer, :model], throughput: [read: 2, write: 1]
     end
