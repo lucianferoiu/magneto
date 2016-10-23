@@ -2,7 +2,7 @@
 
 **An Elixir DSL for Amazon DynamoDB**
 
-*Etymology: the name hints to the [device](https://en.wikipedia.org/wiki/Magneto) that like the dynamo, generates electric current - not to Professor Xavier's archenemy. *
+Etymology: the name hints to the [device](https://en.wikipedia.org/wiki/Magneto) that like the dynamo, generates electric current - not to Professor Xavier's archenemy.
 
 **A word of caution:** the library is still very much a work in progress; you can toy with it, help me
 extend it, but you shouldn't (yet!) use it for actual work but at your own peril.
