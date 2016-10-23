@@ -3,7 +3,7 @@ defmodule Magneto.Mixfile do
 
   def project do
     [app: :magneto,
-     version: "0.0.1",
+     version: "0.1.1",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -36,7 +36,8 @@ defmodule Magneto.Mixfile do
   end
 
   defp package do
-    [maintainers: ["Lucian Feroiu"],
+    [name: :magneto,
+     maintainers: ["Lucian Feroiu"],
      licenses: ["Apache 2.0"],
      links: %{"GitHub" => "https://github.com/lucianferoiu/magneto"},
      files: ~w(mix.exs README.md lib test)]

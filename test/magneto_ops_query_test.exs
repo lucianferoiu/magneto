@@ -31,6 +31,7 @@ defmodule MagnetoOpsQueryTest do
     put %{grand_prix: "GP1", year: 2012, winner_driver: "Driver2", all_time_winner: "Driver2"}, into: GrandPrixModel
     put %{grand_prix: "GP2", year: 2012, winner_driver: "Driver1", all_time_winner: "Driver1"}, into: GrandPrixModel
     put %{grand_prix: "GP3", year: 2012, winner_driver: "Driver3", all_time_winner: "Driver3"}, into: GrandPrixModel
+    put %{grand_prix: "GP4", year: 2012, winner_driver: "Driver2", all_time_winner: "Driver3"}, into: GrandPrixModel
 
     on_exit(fn ->
       destroy GrandPrixModel
@@ -45,7 +46,7 @@ defmodule MagnetoOpsQueryTest do
   test "simple scan" do
     vals = scan GrandPrixModel
     Logger.debug "All values in GrandPrixModel: #{inspect vals}"
-    
+
     vals = scan GrandPrixModel, where: winner_driver == pole_position_driver and winner_driver == all_time_winner, limit: 100
     Logger.debug "All Grand Prix where the winner took all: #{inspect vals}"
   end
