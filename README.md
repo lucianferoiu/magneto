@@ -125,7 +125,7 @@ There is really no distinction between creating a new item or updating an existi
 use Magneto
 alias My.Magneto.Model
 
-put %{hash_key: uid, attribute1: att1_value} into: Model
+put %{hash_key: uid, attribute1: att1_value}, into: Model
 ```
 
 #### Reading
