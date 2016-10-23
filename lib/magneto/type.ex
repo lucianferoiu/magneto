@@ -1,4 +1,7 @@
 defmodule Magneto.Type do
+
+  @moduledoc false
+
   def default_value(type), do: default_value_for_type(type)
 
   def dynamo_db_type(magneto_type), do: _dynamo_db_type(magneto_type)

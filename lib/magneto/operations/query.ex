@@ -1,4 +1,5 @@
 defmodule Magneto.Operations.Query do
+
   alias Magneto.Type
   require Logger
 

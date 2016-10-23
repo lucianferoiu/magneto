@@ -3,10 +3,12 @@ defmodule Magneto.Model do
   alias Magneto.Type
 
   defmodule TableMetadata do
+    @moduledoc false
     defstruct [:type, :storage, :keys, :attributes, :global_indexes, :local_indexess]
   end
 
   defmodule IndexMetadata do
+    @moduledoc false
     defstruct [:type, :name, :table, :keys, :attributes]
   end
 

@@ -1,6 +1,8 @@
 defmodule Magneto.Utils do
 
-@doc "Convert timestamp (or the current time) to ISO-formatted string"
+  @moduledoc false
+
+  @doc "Convert timestamp (or the current time) to ISO-formatted string"
   def timestamp_to_str do
     right_now = Timex.now
     timestamp_to_str(right_now)

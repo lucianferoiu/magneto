@@ -11,7 +11,7 @@ defmodule Magneto.Mixfile do
 	 # Docs
 	 name: "Magneto",
 	 source_url: "https://github.com/lucianferoiu/magneto",
-	 docs: [main: "README.md"],
+	 docs: [main: "readme", extras: ["README.md"]],
 
      # Hex
      description: description(),
