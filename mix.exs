@@ -3,10 +3,15 @@ defmodule Magneto.Mixfile do
 
   def project do
     [app: :magneto,
-     version: "0.1.1",
+     version: "0.1.2",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+	 
+	 # Docs
+	 name: "Magneto",
+	 source_url: "https://github.com/lucianferoiu/magneto",
+	 docs: [main: "README.md"],
 
      # Hex
      description: description(),
@@ -32,7 +37,8 @@ defmodule Magneto.Mixfile do
     [{:poison, "~> 2.0"},
     {:httpoison, "~> 0.9.0"},
     {:timex, "~> 3.0"},
-    {:ex_aws, "~> 1.0.0-beta3"}]
+    {:ex_aws, "~> 1.0.0-beta3"},
+	{:ex_doc, "~> 0.14", only: :dev}]
   end
 
   defp package do

@@ -15,7 +15,7 @@ extend it, but you shouldn't (yet!) use it for actual work but at your own peril
 
     ```elixir
     def deps do
-      [{:magneto, "~> 0.1.1"}]
+      [{:magneto, "~> 0.1.2"}]
     end
     ```
 
